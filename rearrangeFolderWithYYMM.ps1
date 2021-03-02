@@ -25,6 +25,7 @@ foreach ($elt in $listElt) {
     
     $dateStr = $elt.CreationTime.ToString("yyMM");
     if ($dateStr -ge $(get-date).ToString("yyMM") ) {
+    if ($dateStr -ge $($(get-date).AddMonths($MinusMonth * -1)).ToString("yyMM") ) {
         write-debug $("No archive for current month: " +  $elt.BaseName);
         continue;
     }
