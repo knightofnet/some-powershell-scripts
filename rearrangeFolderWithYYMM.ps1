@@ -1,7 +1,10 @@
 Param (
     [Parameter(Mandatory=$true)]
     [string]$Path= ".",
-    [string[]]$Exclude = @()
+    [string[]]$Exclude = @(),
+    
+    [int]$MinusMonth = 0,
+    [switch]$DryRun
 );
 
 
@@ -24,7 +27,6 @@ foreach ($elt in $listElt) {
     }
     
     $dateStr = $elt.CreationTime.ToString("yyMM");
-    if ($dateStr -ge $(get-date).ToString("yyMM") ) {
     if ($dateStr -ge $($(get-date).AddMonths($MinusMonth * -1)).ToString("yyMM") ) {
         write-debug $("No archive for current month: " +  $elt.BaseName);
         continue;
@@ -34,11 +36,16 @@ foreach ($elt in $listElt) {
     
     if (-not (Test-Path -Path $pathTarget -PathType Container )) {
         write-host $("Create folder " + $dateStr);
-        mkdir -Path $pathTarget;
-        Get-Item -Path $pathTarget | ForEach-Object { $_.LastWriteTime = $elt.CreationTime.ToString("MM/01/yyyy 12:00:00")  }
-    }     
+        if (-not($DryRun.IsPresent)) {
+            mkdir -Path $pathTarget;
+            Get-Item -Path $pathTarget | ForEach-Object { $_.LastWriteTime = $elt.CreationTime.ToString("MM/01/yyyy 12:00:00")  }
+        }
+    }
 
-    $elt | Move-Item -Destination $pathTarget;
+     
+    if (-not($DryRun.IsPresent)) {
+        $elt | Move-Item -Destination $pathTarget;
+    }
     $listDone.Add($elt);
 }
 
