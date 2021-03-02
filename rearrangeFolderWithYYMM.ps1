@@ -35,9 +35,7 @@ foreach ($elt in $listElt) {
         write-host $("Create folder " + $dateStr);
         mkdir -Path $pathTarget;
         Get-Item -Path $pathTarget | ForEach-Object { $_.LastWriteTime = $elt.CreationTime.ToString("MM/01/yyyy 12:00:00")  }
-    }
-
-     
+    }     
 
     $elt | Move-Item -Destination $pathTarget;
     $listDone.Add($elt);
