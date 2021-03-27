@@ -54,6 +54,40 @@ function Start-Hibernate([int]$Seconds=0, [int]$Minutes=0, [int]$Hours=0, [switc
 
 }
 
+function Read-HostMultiple() {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [string[]]
+        $Prompts,
+        [string]
+        $ToPreviousPhrase=""
+    );
+
+    $retArray=@();
+    $i = 0;
+    while ($i -lt $Prompts.Length)  {
+
+        $prompt = $Prompts[$i];
+        $rh = Read-Host -Prompt $prompt ;
+        if (($ToPreviousPhrase -ne "") -and ($rh -eq $ToPreviousPhrase)) {
+            $i--;
+            if ($i -lt 0) {
+                return @();
+            }
+        } else {
+            if ($retArray.Length -gt $i) {
+                $retArray[$i] = $rh;
+            } else {
+                $retArray += $rh;
+            }
+            $i++;
+        }
+
+    }
+
+    return $retArray;
+}
+
 function Beep([switch]$Legacy) {
     if ($Legacy.IsPresent) {
         [console]::Beep(1000,500);
@@ -62,4 +96,4 @@ function Beep([switch]$Legacy) {
     }
 }
 
-Export-ModuleMember -Function Beep, Start-VisualSleep, Get-HumanReadableTime, Start-SleepBis, Start-Hibernate;
+Export-ModuleMember -Function Beep, Read-HostMultiple, Start-VisualSleep, Get-HumanReadableTime, Start-SleepBis, Start-Hibernate;
