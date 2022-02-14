@@ -1,4 +1,5 @@
-Param (
+[CmdletBinding()]
+Param (    
     [Parameter(Mandatory=$true)]
     [string]$Path= ".",
     [string[]]$Exclude = @(),
@@ -7,7 +8,6 @@ Param (
     [switch]$DryRun
 );
 
-
 $pathArchiveTarget = $(join-path $Path $ArchiveRel);
 
 
@@ -15,10 +15,14 @@ $listElt = Get-ChildItem -Path $Path;
 
 $listDone = New-Object System.Collections.Generic.List[System.IO.FileSystemInfo];
 
+if ($DryRun.IsPresent) {
+    Write-Host "Dry mode: nothing will be moved; it's just for a try.";
+}
+
 foreach ($elt in $listElt) {
     
     if ($elt.FullName -eq $pathArchiveTarget) {
-        write-debug $("Is a arhive Folder");
+        Write-Verbose $("Is an archive Folder");
         continue;
     }
     <#
@@ -32,44 +36,60 @@ foreach ($elt in $listElt) {
     #>
 
     if ($Exclude.Contains($elt.BaseName)) {
-        write-host $("Excluded: " + $elt.BaseName);
+        Write-Verbose $("Excluded: " + $elt.BaseName);
         continue;
     }
-    
+
     $dateStr = $elt.LastWriteTime.ToString("yyMM");
+    if ( ($a.PSIsContainer) -and ($dateStr -eq $elt.BaseName)) {
+        continue;
+    }
+
     if ($dateStr -ge $($(get-date).AddMonths($MinusMonth * -1)).ToString("yyMM") ) {
-        write-debug $("No archive for current month: " +  $elt.BaseName);
+        Write-Verbose $("No archive for current month: " +  $elt.BaseName);
         continue;
     }
 
     
     $pathTarget = $(join-path $pathArchiveTarget $dateStr);
     
+    # Keeps the info that we have created date YYMM folder.
+    # if yes, and only if this case, we will set the lastWriteTime
+    $isMkDir = $false;
+
     if (-not (Test-Path -Path $pathTarget -PathType Container )) {
-        write-host $("Create folder " + $dateStr);
+        Write-Verbose $("Create folder " + $dateStr);
         if (-not($DryRun.IsPresent)) {
-            mkdir -Path $pathTarget;
-            Get-Item -Path $pathTarget | ForEach-Object { $_.LastWriteTime = $elt.CreationTime.ToString("MM/01/yyyy 12:00:00")  }
+            mkdir -Path $pathTarget;          
+            $isMkDir = $true; 
         } else {
-            Write-Host ""
+            Write-Verbose ""
         }
     }
-
      
     if (-not($DryRun.IsPresent)) {
         $elt | Move-Item -Destination $pathTarget;
     } else {
-        write-host $("Move {0}`n To {1}" -f $elt.FullName, $pathTarget);
+        Write-Verbose $("Move {0}`n> To {1}" -f $elt.FullName, $pathTarget);
     }
     $listDone.Add($elt);
 
-    #Get-Item -Path $pathTarget | ForEach-Object { $([datetime]::Now.ToString("MM/01/yyyy 12:00:00")    }
+    if ($isMkDir) {
+        # set LastWriteTime at first day of month
+        Get-Item -Path $pathTarget | ForEach-Object { $_.LastWriteTime = $elt.CreationTime.ToString("MM/01/yyyy 12:00:00")}
+    }    
+
 }
 
 if ($listDone.Count -gt 0) {
-    write-host "Copied :";
-    foreach($elt in $listDone) {
-        write-host $("> " + $elt.BaseName);
+    write-host "Copied :"; 
+  
+    if ($VerbosePreference -eq "Continue") { 
+        foreach($elt in $listDone) {
+            write-host $("> " + $elt.BaseName);
+        }
+    } elseif($VerbosePreference -eq "SilentlyContinue") {
+        write-host $(" > {0} elements" -f $listDone.Count);
     }
 } else {
     write-host "Nothing archived";
