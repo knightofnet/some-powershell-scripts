@@ -6,6 +6,30 @@ function Show-InExplorer() {
         $File
     );
 
+    <#
+        .SYNOPSIS
+        Reveal a file or a folder into Windows Explorer.
+
+        .DESCRIPTION
+        Reveal a file or a folder into Windows Explorer.
+
+        .PARAMETER File
+        The File object to reveal.
+
+        .INPUTS
+        The File object to reveal.
+
+        .OUTPUTS
+        None.
+
+        .EXAMPLE
+        PS> Show-InExplorer -File (Get-Item -Path "c:\Windows")
+
+        .LINK
+        Online version: https://github.com/knightofnet/some-powershell-scripts
+
+    #>    
+
     $null = [System.Diagnostics.Process]::Start("explorer.exe", "/select, `"" + $File.FullName + "`"");
 }
 
@@ -16,6 +40,31 @@ function Show-InExplorer() {
         [String]
         $FilePath
     );    
+
+    <#
+        .SYNOPSIS
+        Reveal a file or a folder into Windows Explorer.
+
+        .DESCRIPTION
+        Reveal a file or a folder into Windows Explorer.
+
+        .PARAMETER FilePath
+        The path to the element to reveal.
+
+        .INPUTS
+        The path to the element to reveal.
+
+        .OUTPUTS
+        None.
+
+        .EXAMPLE
+        PS> Show-InExplorer -FilePath "c:\Windows"
+
+        .LINK
+        Online version: https://github.com/knightofnet/some-powershell-scripts
+
+    #>        
+
     $null = [System.Diagnostics.Process]::Start("explorer.exe", "/select, `"" + $FilePath + "`"");
 }
 
@@ -72,7 +121,6 @@ function Show-DiskUsage() {
 
     Write-Host "";
     write-host $("{0}" -f $Path);
-    #write-host $("Length: " -f $(Get-item -LiteralPath $Path).Length);
     Write-Host "";
 
 
@@ -95,9 +143,6 @@ function Show-DiskUsage() {
             
         }
 
-     
-
-        #write-host $($dirShow, ":", '{0:N2} MB' -f ($len / 1MB))
         $hashRes = @{};
         $hashRes.Add("IsDir", $typeItem);
         $hashRes.Add("Name", $dirShow);
@@ -106,7 +151,6 @@ function Show-DiskUsage() {
         $hashRes.Add("FullName", $_.FullName);
 
         $results += [pscustomobject]$hashRes;        
-
        
     }
 
@@ -122,5 +166,40 @@ function Show-DiskUsage() {
     }
 }
 
+Function Get-MP3MetaData
+{
+    [CmdletBinding()]
+    [Alias()]
+    [OutputType([Psobject])]
+    Param
+    (
+        [String] [Parameter(Mandatory=$true, ValueFromPipeline=$true)] $Filepath
+    )
 
-Export-ModuleMember -Function Show-InExplorer, Get-HumanReadableSize, Get-EmptyFolder, Show-DiskUsage;
+    $File = Get-Item -LiteralPath $Filepath;
+
+
+    $shell = New-Object -ComObject "Shell.Application"
+    $ObjDir = $shell.NameSpace($File.Directory.FullName)
+
+    $ObjFile = $ObjDir.parsename($File.Name)
+    $MetaData = @{}
+    $MP3 = ($ObjDir.Items() | Where-Object {$File.path -like "*.mp3" -or $File.path -like "*.mp4"})
+    $PropertArray = 0,1,2,12,13,14,15,16,17,18,19,20,21,22,27,28,36,220,223
+
+    Foreach($item in $PropertArray)
+    { 
+        If($ObjDir.GetDetailsOf($ObjFile, $item)) #To avoid empty values
+        {
+            $MetaData[$($ObjDir.GetDetailsOf($MP3,$item))] = $ObjDir.GetDetailsOf($ObjFile, $item)
+        }
+        
+    }
+
+    New-Object psobject -Property $MetaData | Select-Object *, @{n="Directory";e={$Dir}}, @{n="Fullname";e={Join-Path $Dir $File.Name -Resolve}}, @{n="Extension";e={$File.Extension}}
+            
+
+}
+
+
+Export-ModuleMember -Function Get-MP3MetaData,Show-InExplorer, Get-HumanReadableSize, Get-EmptyFolder, Show-DiskUsage;
