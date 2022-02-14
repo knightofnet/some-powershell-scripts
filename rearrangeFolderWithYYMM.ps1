@@ -59,17 +59,15 @@ foreach ($elt in $listElt) {
         Write-Verbose $("Excluded: " + $elt.BaseName);
         continue;
     }
+    
+    
+    $dateStrFormat = "yyMM";
 
-    $dateStr = $elt.LastWriteTime.ToString("yyMM");
-    if ( ($elt.PSIsContainer) -and ($dateStr -eq $elt.BaseName)) {
+    $dateStr = $elt.LastWriteTime.ToString($dateStrFormat);
+    if ($dateStr -ge $($(get-date).AddMonths($MinusMonth * -1)).ToString($dateStrFormat) ) {
+        write-debug $("No archive for current month: " +  $elt.BaseName);
         continue;
     }
-
-    if ($dateStr -ge $($(get-date).AddMonths($MinusMonth * -1)).ToString("yyMM") ) {
-        Write-Verbose $("No archive for current month: " +  $elt.BaseName);
-        continue;
-    }
-
     
     $pathTarget = $(join-path $pathArchiveTarget $dateStr);
     
