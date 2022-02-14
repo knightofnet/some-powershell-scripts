@@ -1,3 +1,20 @@
+<#
+.SYNOPSIS
+    Lists the sub-elements of a path and stores them according to their last modification dates in folders with YYMM format.
+ 
+.NOTES
+    Name: rearrangeFolderWithYYMM.ps1
+    Author: Aryx.knightofnet
+    Version: 1.0
+
+ 
+.EXAMPLE
+    rearrangeFolderWithYYMM.ps1 -Path $path [-Exclude $elt1,$elt2,...] [-ArchiveRel = "Archives"] [-MinusMonth = 0] [-DryRun]
+ 
+ 
+.LINK
+    https://github.com/knightofnet/some-powershell-scripts/blob/main/detectBrokenShortcut.ps1
+#>
 [CmdletBinding()]
 Param (    
     [Parameter(Mandatory=$true)]
@@ -8,16 +25,19 @@ Param (
     [switch]$DryRun
 );
 
-$pathArchiveTarget = $(join-path $Path $ArchiveRel);
+# Inform user that dry-mode is active
+if ($DryRun.IsPresent) {
+    Write-Host "Dry mode: nothing will be moved; it's just for a try.";
+}
 
+# Create path string for Archives
+$pathArchiveTarget = $(join-path $Path $ArchiveRel);
 
 $listElt = Get-ChildItem -Path $Path;
 
 $listDone = New-Object System.Collections.Generic.List[System.IO.FileSystemInfo];
 
-if ($DryRun.IsPresent) {
-    Write-Host "Dry mode: nothing will be moved; it's just for a try.";
-}
+
 
 foreach ($elt in $listElt) {
     
@@ -41,7 +61,7 @@ foreach ($elt in $listElt) {
     }
 
     $dateStr = $elt.LastWriteTime.ToString("yyMM");
-    if ( ($a.PSIsContainer) -and ($dateStr -eq $elt.BaseName)) {
+    if ( ($elt.PSIsContainer) -and ($dateStr -eq $elt.BaseName)) {
         continue;
     }
 

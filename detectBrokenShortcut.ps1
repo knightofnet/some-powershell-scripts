@@ -15,8 +15,8 @@
 .LINK
     https://github.com/knightofnet/some-powershell-scripts/blob/main/detectBrokenShortcut.ps1
 #>
-Param (
-    [CmdletBinding()]
+[CmdletBinding()]
+Param (    
     [string]$Path= ".",
     [switch]$Recurse=$false
 );
